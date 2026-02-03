@@ -57,15 +57,22 @@ bool Mdf4Writer::PrepareForWriting() {
     if (data_group == nullptr) {
       continue;
     }
+    bool add_group = true;
     for (IChannelGroup *channel_group : data_group->ChannelGroups()) {
-      if (channel_group == nullptr ||  channel_group->NofSamples() > 0 ||
-          channel_group->NofSamples() > 0 ) {
-        continue;
+      if (channel_group == nullptr ||  channel_group->NofSamples() > 0 ) {
+        add_group = false;
       }
+      if (!add_group) {
+        break;
+      }
+    }
+    if (add_group) {
       active_list.push_back(data_group);
-      break;
+    } else {
+      active_list.clear();
     }
   }
+
   // Check if compression is required
   if (active_list.size() > 1 && IsSavePeriodic() && !CompressData()) {
     CompressData(true);
@@ -113,28 +120,29 @@ bool Mdf4Writer::WriteSignalData(std::streambuf& buffer) {
     return false;
   }
 
-  // Only the last DG block is updated. So go to the last DT
-  const auto *last_dg = header->LastDataGroup();
-  if (last_dg == nullptr) {
-    return true;
-  }
-
-  auto cg_list = last_dg->ChannelGroups();
-  for (auto* group : cg_list) {
-    if (group == nullptr) {
+  auto dg_list = header->DataGroups();
+  for (auto* data_group : dg_list ) {
+    if (data_group == nullptr) {
       continue;
     }
-    auto cn_list = group->Channels();
-    for (auto* channel : cn_list) {
-      if (channel == nullptr) {
+
+    auto cg_list = data_group->ChannelGroups();
+    for (auto* group : cg_list) {
+      if (group == nullptr) {
         continue;
       }
-      auto* cn4 = dynamic_cast<Cn4Block*>(channel);
-      if (cn4 == nullptr) {
-        continue;
+      auto cn_list = group->Channels();
+      for (auto* channel : cn_list) {
+        if (channel == nullptr) {
+          continue;
+        }
+        auto* cn4 = dynamic_cast<Cn4Block*>(channel);
+        if (cn4 == nullptr) {
+          continue;
+        }
+        cn4->WriteSignalData(buffer, CompressData());
+        cn4->ClearData();
       }
-      cn4->WriteSignalData(buffer, CompressData());
-      cn4->ClearData();
     }
   }
   return true;

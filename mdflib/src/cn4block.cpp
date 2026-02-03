@@ -492,10 +492,11 @@ uint64_t Cn4Block::Read(std::streambuf& buffer) {
 }
 
 uint64_t Cn4Block::Write(std::streambuf& buffer) {
-  const bool update = FilePosition() > 0;  // True if already written to file
-  if (update) {
+  if (const bool update = FilePosition() > 0;  // True if already written to file
+      update) {
     return block_length_;
   }
+
   nof_attachments_ = static_cast<uint16_t>(attachment_list_.size());
   const auto default_x = (flags_ & CnFlag::DefaultX) != 0;
 
@@ -1185,8 +1186,12 @@ bool Cn4Block::GetValid(const std::vector<uint8_t> &record_buffer,
 }
 
 uint64_t Cn4Block::WriteSignalData(std::streambuf& buffer, bool compress) {
-  uint64_t bytes = 0;
+  if (const int64_t sd_index = Link(kIndexData); sd_index > 0) {
+    // SD data already saved. Ignore saving
+    return 0;
+  }
 
+  uint64_t bytes = 0;
   if (Type() == ChannelType::MaxLength ||
       (Type() == ChannelType::VariableLength && VlsdRecordId() > 0) ) {
     // Signal data is updated elsewhere

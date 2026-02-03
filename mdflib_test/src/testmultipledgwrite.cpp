@@ -24,7 +24,6 @@ using namespace std::this_thread;
 
 namespace {
 
-std::string kTestRootDir; ///< Test root directory
 std::string kTestDir; ///<  <Test Root Dir>/mdf/write;
 bool kSkipTest = false;
 
@@ -63,36 +62,23 @@ void NoLog(const MdfLocation& , mdf::MdfLogSeverity,
 namespace mdf::test {
 void TestMultipleDgWrite::SetUpTestSuite() {
 
+    try {
+    // The log output is sent to the console while the test files are
+    // kept until next run.
+    // By this the test files may be inspected.
 
-  try {
-    // Create the root asn log directory. Note that this directory
-    // exists in the temp dir of the operating system and is not
-    // deleted by this test program. May be deleted at the restart
-    // of the operating system.
-    auto temp_dir = temp_directory_path();
-    temp_dir.append("test");
-    kTestRootDir = temp_dir.string();
-    create_directories(temp_dir); // Not deleted
-
-
-    // Log to a file as this file is used as an attachment file
+  // Log toe console
     auto& log_config = LogConfig::Instance();
-    log_config.RootDir(kTestRootDir);
-    log_config.BaseName("multi_dg_write");
-    log_config.Type(LogType::LogToFile);
+    log_config.Type(LogType::LogToConsole);
     log_config.CreateDefaultLogger();
-
-    remove(log_config.GetLogFile()); // Remove any old log files
 
     // Connect the MDF library to the util logging functionality
     MdfLogStream::SetLogFunction1(LogFunc);
 
-    // Add console logging
-    log_config.AddLogger("Console",LogType::LogToConsole, {});
-    LOG_TRACE() << "Log file created. File: " << log_config.GetLogFile();
-
     // Create the test directory. Note that this directory is deleted before
     // running the test, not after.
+    auto temp_dir = temp_directory_path();
+    temp_dir.append("test");
     temp_dir.append("mdf");
     temp_dir.append("multiple_dg");
     std::error_code err;
@@ -103,11 +89,8 @@ void TestMultipleDgWrite::SetUpTestSuite() {
     create_directories(temp_dir);
     kTestDir = temp_dir.string();
 
-
     LOG_TRACE() << "Created the test directory. Dir: " << kTestDir;
     kSkipTest = false;
-    // The log file is actually not created directly. So wait until the log
-    // file exist, otherwise the attachment test will fail.
 
   } catch (const std::exception& err) {
     LOG_ERROR() << "Failed to create test directories. Error: " << err.what();
@@ -122,7 +105,7 @@ void TestMultipleDgWrite::TearDownTestSuite() {
   log_config.DeleteLogChain();
 }
 
-TEST_F(TestMultipleDgWrite, Mdf3WriteSingleDG) {
+TEST_F(TestMultipleDgWrite, Mdf3SingleDg) {
   if (kSkipTest) {
     GTEST_SKIP();
   }
@@ -253,7 +236,7 @@ TEST_F(TestMultipleDgWrite, Mdf3WriteSingleDG) {
 }
 
 
-TEST_F(TestMultipleDgWrite, Mdf3WriteMultiDG) {
+TEST_F(TestMultipleDgWrite, Mdf3MultiDg) {
   if (kSkipTest) {
     GTEST_SKIP();
   }
@@ -401,7 +384,7 @@ TEST_F(TestMultipleDgWrite, Mdf3WriteMultiDG) {
 
 }
 
-TEST_F(TestMultipleDgWrite, Mdf4WriteMultiDG) {
+TEST_F(TestMultipleDgWrite, Mdf4MultiDg) {
   if (kSkipTest) {
     GTEST_SKIP();
   }
@@ -551,7 +534,7 @@ TEST_F(TestMultipleDgWrite, Mdf4WriteMultiDG) {
 
 }
 
-TEST_F(TestMultipleDgWrite, Mdf4ConverterMultiDGCompress) {
+TEST_F(TestMultipleDgWrite, Mdf4ConverterMultiDgCompress) {
   if (kSkipTest) {
     GTEST_SKIP();
   }
@@ -707,7 +690,7 @@ TEST_F(TestMultipleDgWrite, Mdf4ConverterMultiDGCompress) {
 
 }
 
-TEST_F(TestMultipleDgWrite, Mdf4ConverterMultiNoCompressDG) {
+TEST_F(TestMultipleDgWrite, Mdf4ConverterMultiNoCompressDg) {
   if (kSkipTest) {
     GTEST_SKIP();
   }
@@ -861,6 +844,185 @@ TEST_F(TestMultipleDgWrite, Mdf4ConverterMultiNoCompressDG) {
     }
   }
 
+}
+
+TEST_F(TestMultipleDgWrite, Mdf4WriteMultiDgSd) {
+  if (kSkipTest) {
+    GTEST_SKIP();
+  }
+  constexpr size_t max_sample = 1'000'000;
+  path mdf_file(kTestDir);
+  mdf_file.append("multi_dg_sd.mf4");
+  {
+    auto writer = MdfFactory::CreateMdfWriter(MdfWriterType::Mdf4Basic);
+
+    writer->Init(mdf_file.string());
+
+    auto* header = writer->Header();
+    ASSERT_TRUE(header != nullptr);
+    header->Author("Ingemar Hedvall");
+    header->Department("Home Alone");
+    header->Description("Testing Multiple DG Measurement");
+    header->Project("MDF4 Write Multiple DG with SD block");
+
+    {
+      auto* data_group = writer->CreateDataGroup();
+      ASSERT_TRUE(data_group != nullptr);
+
+      auto* channel_group = data_group->CreateChannelGroup();
+      ASSERT_TRUE(channel_group != nullptr);
+
+      auto* master = channel_group->CreateChannel();
+      master->Name("Time");
+      master->Description("Time channel");
+      master->Type(ChannelType::Master);
+      master->Sync(ChannelSyncType::Time);
+      master->DataType(ChannelDataType::FloatLe);
+      master->DataBytes(8);
+      master->Unit("s");
+
+      for (size_t cn_index = 0; cn_index < 3; ++cn_index) {
+        auto* channel = channel_group->CreateChannel();
+        ASSERT_TRUE(channel != nullptr);
+        std::ostringstream name;
+        name << "Channel_" << cn_index + 1;
+        channel->Name(name.str());
+        channel->Description("Channel description");
+        channel->Type(ChannelType::VariableLength);
+        channel->DataType(ChannelDataType::StringUTF8);
+        channel->DataBytes(8);
+        channel->Unit("s");
+      }
+    }
+    {
+      auto* data_group = writer->CreateDataGroup();
+      ASSERT_TRUE(data_group != nullptr);
+
+      auto* channel_group = data_group->CreateChannelGroup();
+      ASSERT_TRUE(channel_group != nullptr);
+
+      auto* master = channel_group->CreateChannel();
+      master->Name("Time");
+      master->Description("Time channel");
+      master->Type(ChannelType::Master);
+      master->Sync(ChannelSyncType::Time);
+      master->DataType(ChannelDataType::FloatLe);
+      master->DataBytes(4);
+      master->Unit("s");
+
+      for (size_t cn_index = 10; cn_index < 13; ++cn_index) {
+        auto* channel = channel_group->CreateChannel();
+        ASSERT_TRUE(channel != nullptr);
+        std::ostringstream name;
+        name << "Channel_" << cn_index + 1;
+        channel->Name(name.str());
+        channel->Description("Channel description");
+        channel->Type(ChannelType::FixedLength);
+        channel->DataType(ChannelDataType::FloatBe);
+        channel->DataBytes(4);
+        channel->Unit("s");
+      }
+    }
+
+    writer->InitMeasurement();
+    const auto start_time = MdfHelper::NowNs();
+
+    writer->StartMeasurement(start_time);
+    for (size_t sample = 0; sample < max_sample; ++sample) {
+      uint32_t dg_count = 0;
+      uint64_t sample_time = start_time + (sample * 100'000'000);
+      for (auto* data_group : header->DataGroups()) {
+        for (auto* channel_group : data_group->ChannelGroups()) {
+          float value = (10.0F * dg_count) + static_cast<float>(sample);
+          for (auto* channel : channel_group->Channels()) {
+            switch (channel->Type()) {
+              case ChannelType::Master:
+                // No need to save sample time
+                break;
+
+              case ChannelType::VariableLength:
+                channel->SetChannelValue(std::to_string(value));
+                break;
+
+              default:
+                channel->SetChannelValue(value);
+                break;
+            }
+          }
+          writer->SaveSample(*data_group, *channel_group, sample_time);
+          ++dg_count;
+        }
+        yield();
+      }
+    }
+    const uint64_t stop_time = start_time + (max_sample * 100'000'000);;
+    writer->StopMeasurement(stop_time);
+    writer->FinalizeMeasurement();
+
+  }
+  {
+    MdfReader reader(mdf_file.string());
+    EXPECT_TRUE(reader.IsOk());
+    EXPECT_TRUE(reader.IsFinalized());
+
+    EXPECT_TRUE(reader.ReadEverythingButData());
+    const auto* header = reader.GetHeader();
+    ASSERT_TRUE(header != nullptr);
+
+
+    const auto dg_list = header->DataGroups();
+    EXPECT_EQ(dg_list.size(), 2);
+    uint32_t dg_count = 0;
+    for (auto* data_group : dg_list) {
+      ASSERT_TRUE(data_group != nullptr);
+
+      ChannelObserverList observer_list;
+      CreateChannelObserverForDataGroup(*data_group, observer_list);
+      EXPECT_EQ(observer_list.size(), 4);
+      EXPECT_TRUE(reader.ReadData(*data_group));
+
+      for (const auto& observer : observer_list) {
+        ASSERT_TRUE(observer);
+        const IChannel& channel = observer->Channel();
+        EXPECT_EQ(observer->NofSamples(), max_sample);
+        double old_time = -1.0;
+        for (size_t sample = 0; sample < observer->NofSamples(); ++sample) {
+          switch (channel.Type()) {
+            case ChannelType::Master: {
+              float sample_time = 0.0;
+              const bool valid = observer->GetEngValue(sample, sample_time);
+              ASSERT_TRUE(valid) << "Master Sample: " << sample;
+              ASSERT_GE(sample_time, old_time) << "Master Sample: " << sample;
+              old_time = sample_time;
+              break;
+            }
+
+            case ChannelType::VariableLength:  {
+              std::string expected_value = std::to_string(
+                  (10.0F * dg_count) + static_cast<float>(sample));
+              std::string value;
+              const bool valid = observer->GetEngValue(sample, value);
+              ASSERT_TRUE(valid) << "String Sample: " << sample;
+              ASSERT_EQ(expected_value, value) << "String Sample: " << sample;
+              break;
+            }
+
+            default:  {
+              float expected_value =
+                  (10.0F * dg_count) + static_cast<float>(sample);
+              double value = 0.0;
+              const bool valid = observer->GetEngValue(sample, value);
+              ASSERT_TRUE(valid) << "Float Sample: " << sample;
+              ASSERT_FLOAT_EQ(expected_value, value) << "Float Sample: " << sample;
+              break;
+            }
+          }
+        }
+
+      }
+      ++dg_count;
+    }
+  }
 }
 
 
