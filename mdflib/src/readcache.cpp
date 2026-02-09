@@ -407,8 +407,7 @@ uint64_t ReadCache::ParseRecordId() {
     throw std::runtime_error("Not a DG4 block");
   }
 
-  const auto id_size = dg4_block_->RecordIdSize();
-  switch (id_size) {
+  switch (dg4_block_->RecordIdSize()) {
     case 0: {
       // Only one CG group
       const auto& cg_list = dg4_block_->Cg4();
@@ -509,6 +508,8 @@ void ReadCache::SkipBytes(size_t nof_skip) {
     if (current_block->BlockType() == "DZ") {
       try {
         file_buffer_.resize(static_cast<size_t>(data_size_) );
+        uint64_t temp_index = 0;
+        current_block->CopyDataToBuffer(buffer_,file_buffer_, temp_index);
       } catch (const std::exception&) {
         break;;
       }
@@ -559,6 +560,8 @@ bool ReadCache::SkipByte() {
   if (current_block->BlockType() == "DZ") {
     try {
       file_buffer_.resize(static_cast<size_t>(data_size_) );
+      uint64_t temp_index = 0;
+      current_block->CopyDataToBuffer(buffer_,file_buffer_, temp_index);
     } catch (const std::exception&) {
       return false;
     }

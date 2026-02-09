@@ -68,7 +68,7 @@ class Dg4Block : public DataListBlock, public IDataGroup {
   /* 7 byte reserved */
   Cg4List cg_list_;
 
-  void ParseDataRecords(std::streambuf& buffer, uint64_t nof_data_bytes);
+  void ParseDataRecords(std::streambuf& buffer, uint64_t nof_data_bytes) const;
   uint64_t ReadRecordId(std::streambuf& buffer, uint64_t& record_id) const;
 
 };

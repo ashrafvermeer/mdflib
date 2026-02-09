@@ -516,7 +516,7 @@ void  Dg4Block::ReadVlsdData(std::streambuf& buffer,Cn4Block& channel,
 
 }
 
-void Dg4Block::ParseDataRecords(std::streambuf& buffer, uint64_t nof_data_bytes) {
+void Dg4Block::ParseDataRecords(std::streambuf& buffer, uint64_t nof_data_bytes) const {
   if (nof_data_bytes == 0) {
     return;
   }

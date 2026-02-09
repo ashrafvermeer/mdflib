@@ -8,6 +8,7 @@
 #include <filesystem>
 #include <map>
 #include <string>
+#include <iostream>
 
 #include <boost/iostreams/device/file.hpp>
 #include <boost/iostreams/stream.hpp>
@@ -97,7 +98,7 @@ void TestRead::SetUpTestSuite() {
       const auto &fullname = entry.path();
       const auto stem = fullname.stem().string();
       if (kMdfList.find(stem) == kMdfList.cend() && IsMdfFile(fullname.string())) {
-        std::cout << "Found MDF file. File: " << stem << std::endl;
+        // std::cout << "Found MDF file. File: " << stem << std::endl;
         kMdfList.emplace(stem, fullname.string());
       }
     }
@@ -833,6 +834,75 @@ TEST_F(TestRead, TestReadData) {
       CreateChannelObserverForDataGroup(*data_group, observers);
       EXPECT_TRUE(reader.ReadData(*data_group)) << test_file;
     }
+    ++read_count;
+  }
+  std::cout << "Tested " << read_count << " files." << std::endl;
+}
+
+TEST_F(TestRead, TestPartial) {
+  if (kMdfList.empty()) {
+    GTEST_SKIP_("No MDF files.");
+  }
+  size_t read_count = 0;
+  for (const auto& [name, test_file]: kMdfList) {
+//    if (name != "00000022_Extracted") {
+//      continue;
+//    }
+    MdfReader reader(test_file);
+    const bool read_config = reader.ReadEverythingButData();
+    ASSERT_TRUE(read_config) << name;
+
+    const MdfFile* mf4_file = reader.GetFile();
+    ASSERT_TRUE(mf4_file != nullptr);
+
+    std::vector<IDataGroup*> dg_list;
+    mf4_file->DataGroups(dg_list);
+    for (IDataGroup* data_group : dg_list) {
+      if (data_group == nullptr) {
+        continue;
+      }
+
+      for (auto* channel_group : data_group->ChannelGroups()) {
+        if (channel_group == nullptr) {
+          continue;
+        }
+        ChannelObserverList observers;
+        for (auto* channel : channel_group->Channels()) {
+          if (channel == nullptr || channel->Type() != ChannelType::Master
+            || channel->Sync() != ChannelSyncType::Time) {
+            continue;
+          }
+          observers.emplace_back(CreateChannelObserver(*data_group, *channel_group, *channel));
+        }
+        if (observers.empty() || channel_group->NofSamples() == 0) {
+          continue;
+        }
+        // Read out firat sample and last sample
+        const uint64_t nof_samples = channel_group->NofSamples();
+        // reader.ReadData(*data_group);
+        reader.ReadPartialData(*data_group, 0, 1);
+        reader.ReadPartialData(*data_group, nof_samples - 1, nof_samples);
+        for (auto& observer : observers) {
+          EXPECT_EQ(observer->NofSamples(), nof_samples) << name;
+          double first = 0.0;
+          double last = 0.0;
+          bool valid = observer->GetEngValue(0,first);
+          EXPECT_TRUE(valid) << "First: " << name;
+          if (first > 1E10) {
+            continue; // Most likely an invalid first time
+          }
+          valid = observer->GetEngValue(nof_samples -1,last);
+          EXPECT_TRUE(valid) << "Last: " << name;
+          EXPECT_GE(last, first) << "CG: " << channel_group->Name()
+            << ", File: " << test_file;
+          //std::cout << "File: " << name << ", Channel: " << observer->Name()
+          //  << ", First [s] = " << first
+          //  << ", Last [s] = " << last
+          //<< std::endl;
+        }
+      }
+    }
+
     ++read_count;
   }
   std::cout << "Tested " << read_count << " files." << std::endl;
