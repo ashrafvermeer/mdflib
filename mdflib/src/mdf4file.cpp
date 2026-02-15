@@ -25,16 +25,21 @@ IHeader *Mdf4File::Header() const { return hd_block_.get(); }
 void Mdf4File::ReadHeader(std::streambuf& buffer) {
   if (!id_block_) {
     id_block_ = std::make_unique<IdBlock>();
+  }
+  if (id_block_->Index() < 0) {
     SetFilePosition(buffer, 0);
     id_block_->Read(buffer);
   }
+
+
   if (!hd_block_) {
     hd_block_ = std::make_unique<Hd4Block>();
+  }
+  if (hd_block_->Index() <= 0) {
     hd_block_->Init(*id_block_);
     SetFilePosition(buffer, 64);
     hd_block_->Read(buffer);
   }
-
 
 }
 

@@ -65,7 +65,10 @@ class MdfLogStream : public std::ostringstream {
   static void SetLogFunction1(const MdfLogFunction1& func);
   /** \brief Sets a log function. */
   static void SetLogFunction2(const MdfLogFunction2& func);
-  
+  static void ResetLogFunction();
+  static void LogToConsole( const MdfLocation& location,
+                            MdfLogSeverity severity,
+                            const std::string& text);
  protected:
   MdfLocation location_;     ///< File and function location.
   MdfLogSeverity severity_;  ///< Log level of the stream
