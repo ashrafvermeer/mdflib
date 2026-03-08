@@ -5,6 +5,7 @@
 #pragma once
 #include "MdfFile.h"
 #include "CanMessage.h"
+#include "LinMessage.h"
 
 using namespace MdfLibrary::ExportFunctions;
 
@@ -56,6 +57,9 @@ class MdfWriter {
   }
   void SaveCanMessage(const MdfChannelGroup group, uint64_t time, const CanMessage& msg) {
     MdfWriterSaveCanMessage(writer, group.GetChannelGroup(), time, msg.GetCanMessage());
+  }
+  void SaveLinMessage(const MdfChannelGroup group, uint64_t time, const LinMessage& msg) {
+    MdfWriterSaveLinMessage(writer, group.GetChannelGroup(), time, msg.GetLinMessage());
   }
   bool InitMeasurement() { return MdfWriterInitMeasurement(writer); }
   void StartMeasurement(uint64_t start_time) {

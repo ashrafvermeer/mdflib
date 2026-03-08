@@ -76,7 +76,8 @@ set(MDFLIBRARY_PUBLIC_HEADERS
             ../include/mdflibrary/MdfReader.h
             ../include/mdflibrary/MdfSourceInformation.h
             ../include/mdflibrary/MdfWriter.h
-            ../include/mdflibrary/CanMessage.h)
+            ../include/mdflibrary/CanMessage.h
+            ../include/mdflibrary/LinMessage.h)
 set_target_properties(mdflibrary PROPERTIES PUBLIC_HEADER
                                             "${MDFLIBRARY_PUBLIC_HEADERS}")
 get_target_property(PH1 mdflibrary PUBLIC_HEADER)

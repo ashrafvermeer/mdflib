@@ -4,6 +4,7 @@
  */
 #include <iostream>
 #include <sstream>
+#include <vector>
 
 // Pure C example
 #pragma region C
@@ -351,6 +352,69 @@ void cpp_example() {
       Writer.SaveCanMessage(can_remote_frame, tick_time, msg);
       Writer.SaveCanMessage(can_error_frame, tick_time, msg);
       Writer.SaveCanMessage(can_overload_frame, tick_time, msg);
+      tick_time += 1'000'000;
+    }
+    std::cout << "Stop measure" << std::endl;
+    Writer.StopMeasurement(1100000000);
+    Writer.FinalizeMeasurement();
+  }
+
+  {
+
+    std::cout << "Write Lin" << std::endl;
+    MdfWriter Writer(MdfWriterType::MdfBusLogger, "test_lin_cpp.mf4");
+    MdfHeader Header = Writer.GetHeader();
+    MdfFileHistory History = Header.CreateFileHistory();
+    History.SetDescription("Test LIN data types");
+    History.SetToolName("MdfWrite");
+    History.SetToolVendor("ACME Road Runner Company");
+    History.SetToolVersion("1.0");
+    History.SetUserName("Ingemar Hedvall");
+
+    Writer.SetBusType(MdfBusType::LIN);
+    Writer.SetStorageType(MdfStorageType::MlsdStorage);
+    Writer.SetMaxLength(8);
+    Writer.CreateBusLogConfiguration();
+    Writer.SetPreTrigTime(0.0);
+    Writer.SetCompressData(false);
+    MdfDataGroup last_dg = Header.GetLastDataGroup();
+
+    MdfChannelGroup lin_frame = last_dg.GetChannelGroup("LIN_Frame");
+    MdfChannelGroup lin_wake_up = last_dg.GetChannelGroup("LIN_WakeUp");
+    MdfChannelGroup lin_checksum_error =
+        last_dg.GetChannelGroup("LIN_ChecksumError");
+    MdfChannelGroup lin_transmission_error =
+        last_dg.GetChannelGroup("LIN_TransmissionError");
+    MdfChannelGroup lin_sync_error = last_dg.GetChannelGroup("LIN_SyncError");
+    MdfChannelGroup lin_receive_error =
+        last_dg.GetChannelGroup("LIN_ReceiveError");
+    MdfChannelGroup lin_spike = last_dg.GetChannelGroup("LIN_Spike");
+    MdfChannelGroup lin_long_dom = last_dg.GetChannelGroup("LIN_LongDom");
+
+    Writer.InitMeasurement();
+    uint64_t tick_time = 100000000;
+    Writer.StartMeasurement(tick_time);
+    std::cout << "Start measure" << std::endl;
+    for (size_t i = 0; i < 100'000; i++) {
+      std::vector<uint8_t> data;
+      data.assign(i < 8 ? i + 1 : 8, static_cast<uint8_t>(i + 1));
+
+      LinMessage msg;
+      msg.SetLinId(12);
+      msg.SetBusChannel(11);
+      msg.SetDir(true);
+      msg.SetDataLength(static_cast<uint8_t>(data.size()));
+      msg.SetReceivedDataByteCount(static_cast<uint8_t>(data.size()));
+      msg.SetDataBytes(data);
+
+      Writer.SaveLinMessage(lin_frame, tick_time, msg);
+      Writer.SaveLinMessage(lin_wake_up, tick_time, msg);
+      Writer.SaveLinMessage(lin_checksum_error, tick_time, msg);
+      Writer.SaveLinMessage(lin_transmission_error, tick_time, msg);
+      Writer.SaveLinMessage(lin_sync_error, tick_time, msg);
+      Writer.SaveLinMessage(lin_receive_error, tick_time, msg);
+      Writer.SaveLinMessage(lin_spike, tick_time, msg);
+      Writer.SaveLinMessage(lin_long_dom, tick_time, msg);
       tick_time += 1'000'000;
     }
     std::cout << "Stop measure" << std::endl;
