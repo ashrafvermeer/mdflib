@@ -10,6 +10,7 @@
 #include <mdf/idatagroup.h>
 #include <mdf/ievent.h>
 #include <mdf/ifilehistory.h>
+#include <mdf/linmessage.h>
 #include <mdf/mdffactory.h>
 #include <mdf/mdfreader.h>
 #include <mdf/mdfwriter.h>
@@ -119,6 +120,10 @@ EXPORTFEATUREFUNC(void, SaveSample, mdf::IChannelGroup* group, uint64_t time) {
 EXPORTFEATUREFUNC(void, SaveCanMessage, mdf::IChannelGroup* group,
                   uint64_t time, mdf::CanMessage* message) {
   writer->SaveCanMessage(*group, time, *message);
+}
+EXPORTFEATUREFUNC(void, SaveLinMessage, mdf::IChannelGroup* group,
+                 uint64_t time, const mdf::LinMessage* message) {
+  writer->SaveLinMessage(*group, time, *message);
 }
 EXPORTFEATUREFUNC(void, StartMeasurement, uint64_t start_time) {
   writer->StartMeasurement(start_time);
@@ -1188,6 +1193,62 @@ EXPORTFEATUREFUNC(CanErrorType, GetErrorType) { return can->ErrorType(); }
 EXPORTFEATUREFUNC(void, SetErrorType, const CanErrorType type) {
   can->ErrorType(type);
 }
+#undef EXPORTFEATUREFUNC
+#pragma endregion
+
+#pragma region LinMessage
+EXPORT(mdf::LinMessage*, LinMessage, Init) { return new mdf::LinMessage; }
+#define EXPORTFEATUREFUNC(ReturnType, FuncName, ...) \
+  EXPORT(ReturnType, LinMessage, FuncName, mdf::LinMessage* lin, ##__VA_ARGS__)
+EXPORTFEATUREFUNC(void, UnInit) { delete lin; }
+EXPORTFEATUREFUNC(void, SetLinId, uint8_t id) { lin->LinId(id); }
+EXPORTFEATUREFUNC(uint8_t, GetLinId) { return lin->LinId(); }
+EXPORTFEATUREFUNC(void, SetBusChannel, uint8_t channel) {
+  lin->BusChannel(channel);
+}
+EXPORTFEATUREFUNC(uint8_t, GetBusChannel) { return lin->BusChannel(); }
+EXPORTFEATUREFUNC(void, SetDir, bool transmit) { lin->Dir(transmit); }
+EXPORTFEATUREFUNC(bool, GetDir) { return lin->Dir(); }
+EXPORTFEATUREFUNC(void, SetDataLength, uint8_t len) { lin->DataLength(len); }
+EXPORTFEATUREFUNC(uint8_t, GetDataLength) { return lin->DataLength(); }
+EXPORTFEATUREFUNC(void, SetReceivedDataByteCount, uint8_t len) {
+  lin->ReceivedDataByteCount(len);
+}
+EXPORTFEATUREFUNC(uint8_t, GetReceivedDataByteCount) {
+  return lin->ReceivedDataByteCount();
+}
+EXPORTFEATUREFUNC(size_t, GetDataBytes, uint8_t* buffer) {
+  const auto& v = lin->DataBytes();
+  if (buffer != nullptr) memcpy(buffer, v.data(), v.size());
+  return v.size();
+}
+EXPORTFEATUREFUNC(void, SetDataBytes, const uint8_t* data, size_t size) {
+  if (data == nullptr || size == 0) {
+    lin->DataBytes(std::vector<uint8_t>{});
+  } else {
+    lin->DataBytes(std::vector<uint8_t>(data, data + size));
+  }
+}
+EXPORTFEATUREFUNC(void, SetChecksum, uint8_t crc) { lin->Checksum(crc); }
+EXPORTFEATUREFUNC(uint8_t, GetChecksum) { return lin->Checksum(); }
+EXPORTFEATUREFUNC(void, SetChecksumModel, int model) {
+  lin->ChecksumModel(static_cast<mdf::LinChecksumModel>(model));
+}
+EXPORTFEATUREFUNC(int, GetChecksumModel) {
+  return static_cast<int>(lin->ChecksumModel());
+}
+EXPORTFEATUREFUNC(void, SetStartOfFrame, uint64_t ns1970) {
+  lin->StartOfFrame(ns1970);
+}
+EXPORTFEATUREFUNC(uint64_t, GetStartOfFrame) { return lin->StartOfFrame(); }
+EXPORTFEATUREFUNC(void, SetBaudrate, float baud) { lin->Baudrate(baud); }
+EXPORTFEATUREFUNC(float, GetBaudrate) { return lin->Baudrate(); }
+EXPORTFEATUREFUNC(void, SetResponseBaudrate, float baud) {
+  lin->ResponseBaudrate(baud);
+}
+EXPORTFEATUREFUNC(float, GetResponseBaudrate) { return lin->ResponseBaudrate(); }
+EXPORTFEATUREFUNC(void, SetBreakLength, uint32_t len) { lin->BreakLength(len); }
+EXPORTFEATUREFUNC(uint32_t, GetBreakLength) { return lin->BreakLength(); }
 #undef EXPORTFEATUREFUNC
 #pragma endregion
 }  // namespace MdfLibrary::ExportFunctions

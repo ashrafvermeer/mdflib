@@ -23,6 +23,7 @@ class IEvent;
 class ETag;
 class IMetaData;
 class CanMessage;
+class LinMessage;
 }  // namespace mdf
 
 namespace MdfLibrary {
@@ -383,6 +384,30 @@ enum class MessageType : int {
   CAN_ErrorFrame,     ///< Error message.
   CAN_OverloadFrame,  ///< Overload frame message.
 };
+
+enum class LinMessageType : int {
+  LIN_Frame = 0,             ///< Standard LIN data frame.
+  LIN_WakeUp = 1,            ///< Wake-up frame detected on the bus.
+  LIN_ChecksumError = 2,     ///< Frame with checksum error.
+  LIN_TransmissionError = 3, ///< Transmission error occurred.
+  LIN_SyncError = 4,         ///< Synchronization error.
+  LIN_ReceiveError = 5,      ///< Receive error (unexpected length etc.).
+  LIN_Spike = 6,             ///< Short spike or glitch detected.
+  LIN_LongDominantSignal = 7 ///< Long dominant signal (bus stuck low/high).
+};
+
+enum class LinChecksumModel : int {
+  Unknown = -1, ///< Checksum model unknown or not specified.
+  Classic = 0,  ///< Classic (8-bit) LIN checksum model.
+  Enhanced = 1  ///< Enhanced (including protected ID) LIN checksum.
+};
+
+enum class LinTypeOfLongDominantSignal : int {
+  FirstDetection = 0, ///< Initial detection of a long dominant signal.
+  CyclicReport = 1,   ///< Periodic/cyclic reporting of long dominant.
+  EndOfDetection = 2  ///< End or release of the long dominant signal.
+};
+
 }  // namespace MdfLibrary
 
 #if defined(_WIN32)
@@ -454,6 +479,8 @@ EXPORTFEATUREFUNC(bool, InitMeasurement);
 EXPORTFEATUREFUNC(void, SaveSample, mdf::IChannelGroup* group, uint64_t time);
 EXPORTFEATUREFUNC(void, SaveCanMessage, mdf::IChannelGroup* group,
                   uint64_t time, mdf::CanMessage* message);
+EXPORTFEATUREFUNC(void, SaveLinMessage, mdf::IChannelGroup* group,
+                  uint64_t time, mdf::LinMessage* message);
 EXPORTFEATUREFUNC(void, StartMeasurement, uint64_t start_time);
 EXPORTFEATUREFUNC(void, StopMeasurement, uint64_t stop_time);
 EXPORTFEATUREFUNC(bool, FinalizeMeasurement);
@@ -917,6 +944,38 @@ EXPORTFEATUREFUNC(uint8_t, GetBitPosition);
 EXPORTFEATUREFUNC(void, SetBitPosition, const uint8_t position);
 EXPORTFEATUREFUNC(CanErrorType, GetErrorType);
 EXPORTFEATUREFUNC(void, SetErrorType, const CanErrorType type);
+#undef EXPORTFEATUREFUNC
+#pragma endregion
+
+#pragma region mdf::LinMessage
+EXPORT(mdf::LinMessage*, LinMessage, Init);
+#define EXPORTFEATUREFUNC(ReturnType, FuncName, ...) \
+  EXPORT(ReturnType, LinMessage, FuncName, mdf::LinMessage* lin, ##__VA_ARGS__)
+EXPORTFEATUREFUNC(void, UnInit);
+EXPORTFEATUREFUNC(void, SetLinId, uint8_t id);
+EXPORTFEATUREFUNC(uint8_t, GetLinId);
+EXPORTFEATUREFUNC(void, SetBusChannel, uint8_t channel);
+EXPORTFEATUREFUNC(uint8_t, GetBusChannel);
+EXPORTFEATUREFUNC(void, SetDir, bool transmit);
+EXPORTFEATUREFUNC(bool, GetDir);
+EXPORTFEATUREFUNC(void, SetDataLength, uint8_t len);
+EXPORTFEATUREFUNC(uint8_t, GetDataLength);
+EXPORTFEATUREFUNC(void, SetReceivedDataByteCount, uint8_t len);
+EXPORTFEATUREFUNC(uint8_t, GetReceivedDataByteCount);
+EXPORTFEATUREFUNC(size_t, GetDataBytes, uint8_t* buffer);
+EXPORTFEATUREFUNC(void, SetDataBytes, const uint8_t* data, size_t size);
+EXPORTFEATUREFUNC(void, SetChecksum, uint8_t crc);
+EXPORTFEATUREFUNC(uint8_t, GetChecksum);
+EXPORTFEATUREFUNC(void, SetChecksumModel, int model);
+EXPORTFEATUREFUNC(int, GetChecksumModel);
+EXPORTFEATUREFUNC(void, SetStartOfFrame, uint64_t ns1970);
+EXPORTFEATUREFUNC(uint64_t, GetStartOfFrame);
+EXPORTFEATUREFUNC(void, SetBaudrate, float baud);
+EXPORTFEATUREFUNC(float, GetBaudrate);
+EXPORTFEATUREFUNC(void, SetResponseBaudrate, float baud);
+EXPORTFEATUREFUNC(float, GetResponseBaudrate);
+EXPORTFEATUREFUNC(void, SetBreakLength, uint32_t len);
+EXPORTFEATUREFUNC(uint32_t, GetBreakLength);
 #undef EXPORTFEATUREFUNC
 #pragma endregion
 }}  // namespace MdfLibrary::ExportFunctions
