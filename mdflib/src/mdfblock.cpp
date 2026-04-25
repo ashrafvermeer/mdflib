@@ -18,13 +18,8 @@
 #include "mdf/mdflogstream.h"
 #include "tx3block.h"
 
-#if INCLUDE_STD_FILESYSTEM_EXPERIMENTAL
-#include <experimental/filesystem>
-namespace fs = std::experimental::filesystem;
-#else
-#include <filesystem>
-namespace fs = std::filesystem;
-#endif
+#include <ghc/filesystem.hpp>
+namespace fs = ghc::filesystem;
 
 using namespace fs;
 using namespace std::chrono_literals;

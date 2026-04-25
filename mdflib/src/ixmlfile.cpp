@@ -11,13 +11,8 @@
 #include "writexml.h"
 #include "xmlnode.h"
 
-#if INCLUDE_STD_FILESYSTEM_EXPERIMENTAL
-#include <experimental/filesystem>
-namespace fs = std::experimental::filesystem;
-#else
-#include <filesystem>
-namespace fs = std::filesystem;
-#endif
+#include <ghc/filesystem.hpp>
+namespace fs = ghc::filesystem;
 
 namespace mdf {
 
