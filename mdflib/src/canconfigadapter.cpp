@@ -41,7 +41,7 @@ void CanConfigAdapter::CreateConfig(IDataGroup& dg_block) {
     cg_data_frame->StorageType(StorageType());
   }
 
-  if (StorageType() == MdfStorageType::VlsdStorage && cn_data_byte != nullptr) {
+  if (StorageType() != MdfStorageType::MlsdStorage && cn_data_byte != nullptr) {
     // Need to add a special CG group for the data samples.
     // Also need to set the VLSD Record ID. The CreateChannelGroup function
     // creates a valid record ID.
@@ -84,7 +84,7 @@ void CanConfigAdapter::CreateConfig(IDataGroup& dg_block) {
     cg_error_frame->StorageType(StorageType());
   }
 
-  if (StorageType() == MdfStorageType::VlsdStorage && cn_error_byte != nullptr) {
+  if (StorageType() != MdfStorageType::MlsdStorage && cn_error_byte != nullptr) {
     // Need to add a special CG group for the error samples
     if (auto* cg_errors_frame = dg_block.CreateChannelGroup("");
         cg_errors_frame != nullptr) {

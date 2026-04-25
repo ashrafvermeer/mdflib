@@ -1,4 +1,4 @@
-/*
+﻿/*
 * Copyright 2025 Ingemar Hedvall
 * SPDX-License-Identifier: MIT
  */
@@ -104,13 +104,65 @@ void FhComment::FromXml(const std::string& xml_snippet) {
         continue;
       }
       if (node->IsTagName("tool_id")) {
-        tool_id_.FromXml(*node);
+        IXmlNode::ChildList tx_list;
+        node->GetChildList(tx_list);
+
+        bool parsed_tx = false;
+        for (const IXmlNode* tx_node : tx_list) {
+          if (tx_node != nullptr && tx_node->IsTagName("TX")) {
+            tool_id_.FromXml(*tx_node);
+            parsed_tx = true;
+            break;
+          }
+        }
+        if (!parsed_tx) {
+          tool_id_.FromXml(*node);
+        }
       } else if (node->IsTagName("tool_vendor")) {
-        tool_vendor_.FromXml(*node);
+        IXmlNode::ChildList tx_list;
+        node->GetChildList(tx_list);
+
+        bool parsed_tx = false;
+        for (const IXmlNode* tx_node : tx_list) {
+          if (tx_node != nullptr && tx_node->IsTagName("TX")) {
+            tool_vendor_.FromXml(*tx_node);
+            parsed_tx = true;
+            break;
+          }
+        }
+        if (!parsed_tx) {
+          tool_vendor_.FromXml(*node);
+        }
       } else if (node->IsTagName("tool_version")) {
-        tool_version_.FromXml(*node);
+        IXmlNode::ChildList tx_list;
+        node->GetChildList(tx_list);
+
+        bool parsed_tx = false;
+        for (const IXmlNode* tx_node : tx_list) {
+          if (tx_node != nullptr && tx_node->IsTagName("TX")) {
+            tool_version_.FromXml(*tx_node);
+            parsed_tx = true;
+            break;
+          }
+        }
+        if (!parsed_tx) {
+          tool_version_.FromXml(*node);
+        }
       } else if (node->IsTagName("user_name")) {
-        user_name_.FromXml(*node);
+        IXmlNode::ChildList tx_list;
+        node->GetChildList(tx_list);
+
+        bool parsed_tx = false;
+        for (const IXmlNode* tx_node : tx_list) {
+          if (tx_node != nullptr && tx_node->IsTagName("TX")) {
+            user_name_.FromXml(*tx_node);
+            parsed_tx = true;
+            break;
+          }
+        }
+        if (!parsed_tx) {
+          user_name_.FromXml(*node);
+        }
       }
     }
     MdComment::FromXml(*root_node);

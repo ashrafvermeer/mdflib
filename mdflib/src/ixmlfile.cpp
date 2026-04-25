@@ -11,13 +11,8 @@
 #include "writexml.h"
 #include "xmlnode.h"
 
-#if INCLUDE_STD_FILESYSTEM_EXPERIMENTAL
-#include <experimental/filesystem>
-namespace fs = std::experimental::filesystem;
-#else
-#include <filesystem>
-namespace fs = std::filesystem;
-#endif
+#include <ghc/filesystem.hpp>
+namespace fs = ghc::filesystem;
 
 namespace mdf {
 
@@ -72,7 +67,7 @@ bool IXmlFile::WriteFile() {
     return false;
   }
   try {
-    std::ofstream file(fs::u8path(filename_),
+    std::ofstream file(fs::u8path(filename_).string(),
                        std::ofstream::out | std::ofstream::trunc);
     if (!file.is_open()) {
       MDF_ERROR() << "Couldn't open file for writing. File: " << filename_;
